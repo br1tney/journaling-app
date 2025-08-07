@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Journal</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>✨ My Journal</h1>
+            <div class="user-info">
+                <span id="welcomeUser">Welcome back!</span>
+                <button id="logoutBtn" class="btn secondary">Logout</button>
+            </div>
+        </header>
+
+        <div class="journal-container">
+            <div class="journal-form">
+                <div class="form-group">
+                    <label for="entryDate">Date</label>
+                    <input type="date" id="entryDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="mood">How are you feeling?</label>
+                    <select id="mood" required>
+                        <option value="">Select your mood</option>
+                        <option value="amazing">🤩 Amazing</option>
+                        <option value="happy">😊 Happy</option>
+                        <option value="content">😌 Content</option>
+                        <option value="neutral">😐 Neutral</option>
+                        <option value="sad">😢 Sad</option>
+                        <option value="anxious">😰 Anxious</option>
+                        <option value="angry">😠 Angry</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="journalEntry">What's on your mind?</label>
+                    <textarea id="journalEntry" placeholder="Write about your day, thoughts, feelings..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="imageUpload">Add a photo (optional)</label>
+                    <input type="file" id="imageUpload" accept="image/*">
+                    <div id="imagePreview" class="image-preview hidden">
+                        <img id="previewImg" alt="Preview">
+                        <button type="button" id="removeImage" class="btn-remove">×</button>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button id="saveEntry" class="btn primary">Save Entry</button>
+                    <button id="clearForm" class="btn secondary">Clear</button>
+                </div>
+            </div>
+
+            <div class="entries-section">
+                <h2>Your Journal Entries</h2>
+                <div id="entriesList" class="entries-list">
+                    <!-- Entries will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <div id="message" class="message hidden"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
