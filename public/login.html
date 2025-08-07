@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Journal App - Login</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://sdk.amazonaws.com/js/aws-cognito-sdk.min.js"></script>
+    <script src="https://sdk.amazonaws.com/js/amazon-cognito-identity.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="login-container">
+            <h1>✨ My Journal</h1>
+            <p class="subtitle">Welcome back to your personal space</p>
+            
+            <div id="loginForm" class="form-section">
+                <input type="text" id="username" placeholder="Username" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <button id="loginBtn" class="btn primary">Sign In</button>
+                <p class="form-footer">
+                    Don't have an account? <a href="#" id="showSignup">Sign up</a>
+                </p>
+            </div>
+
+            <div id="signupForm" class="form-section hidden">
+                <input type="text" id="signupUsername" placeholder="Username" required>
+                <input type="email" id="signupEmail" placeholder="Email" required>
+                <input type="password" id="signupPassword" placeholder="Password" required>
+                <button id="signupBtn" class="btn primary">Sign Up</button>
+                <p class="form-footer">
+                    Already have an account? <a href="#" id="showLogin">Sign in</a>
+                </p>
+            </div>
+
+            <div id="verificationForm" class="form-section hidden">
+                <h3>Verify Your Account</h3>
+                <input type="text" id="verificationCode" placeholder="Verification Code" required>
+                <button id="verifyBtn" class="btn primary">Verify</button>
+            </div>
+
+            <div id="message" class="message hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        // Cognito configuration
+        const poolData = {
+            UserPoolId: 'YOUR_USER_POOL_ID', // Replace with your User Pool ID
+            ClientId: 'YOUR_CLIENT_ID' // Replace with your Client ID
+        };
+        
+        const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+        let currentUsername = '';
+
+        // DOM elements
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const verificationForm = document.getElementById('verificationForm');
+        const message = document.getElementById('message');
+
+        // Event listeners
+        document.getElementById('showSignup').addEventListener('click', showSignupForm);
+        document.getElementById('showLogin').addEventListener('click', showLoginForm);
+        document.getElementById('loginBtn').addEventListener('click', login);
+        document.getElementById('signupBtn').addEventListener('click', signUp);
+        document.getElementById('verifyBtn').addEventListener('click', verify);
+
+        function showMessage(text, type = 'info') {
+            message.textContent = text;
+            message.className = `message ${type}`;
+            message.classList.remove('hidden');
+        }
+
+        function hideMessage() {
+            message.classList.add('hidden');
+        }
+
+        function showSignupForm(e) {
+            e.preventDefault();
+            loginForm.classList.add('hidden');
+            signupForm.classList.remove('hidden');
+            verificationForm.classList.add('hidden');
+            hideMessage();
+        }
+
+        function showLoginForm(e) {
+            e.preventDefault();
+            signupForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+            verificationForm.classList.add('hidden');
+            hideMessage();
+        }
+
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showMessage('Please fill in all fields', 'error');
+                return;
+            }
+
+            const userData = {
+                Username: username,
+                Pool: userPool
+            };
+
+            const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+            const authenticationData = {
+                Username: username,
+                Password: password
+            };
+
+            const authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails(authenticationData);
+
+            cognitoUser.authenticateUser(authenticationDetails, {
+                onSuccess: function(result) {
+                    showMessage('Login successful! Redirecting...', 'success');
+                    localStorage.setItem('accessToken', result.getAccessToken().getJwtToken());
+                    localStorage.setItem('username', username);
+                    setTimeout(() => {
+                        window.location.href = '/journal';
+                    }, 1000);
+                },
+                onFailure: function(err) {
+                    showMessage(`Login failed: ${err.message}`, 'error');
+                }
+            });
+        }
+
+        function signUp() {
+            const username = document.getElementById('signupUsername').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+
+            if (!username || !email || !password) {
+                showMessage('Please fill in all fields', 'error');
+                return;
+            }
+
+            const attributeList = [
+                new AmazonCognitoIdentity.CognitoUserAttribute({
+                    Name: 'email',
+                    Value: email
+                })
+            ];
+
+            userPool.signUp(username, password, attributeList, null, function(err, result) {
+                if (err) {
+                    showMessage(`Sign up failed: ${err.message}`, 'error');
+                    return;
+                }
+                
+                currentUsername = username;
+                showMessage('Sign up successful! Please check your email for verification code.', 'success');
+                signupForm.classList.add('hidden');
+                verificationForm.classList.remove('hidden');
+            });
+        }
+
+        function verify() {
+            const verificationCode = document.getElementById('verificationCode').value;
+
+            if (!verificationCode) {
+                showMessage('Please enter verification code', 'error');
+                return;
+            }
+
+            const userData = {
+                Username: currentUsername,
+                Pool: userPool
+            };
+
+            const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+
+            cognitoUser.confirmRegistration(verificationCode, true, function(err, result) {
+                if (err) {
+                    showMessage(`Verification failed: ${err.message}`, 'error');
+                    return;
+                }
+                
+                showMessage('Account verified successfully! You can now sign in.', 'success');
+                setTimeout(() => {
+                    verificationForm.classList.add('hidden');
+                    loginForm.classList.remove('hidden');
+                }, 2000);
+            });
+        }
+
+        // Check if user is already logged in
+        const currentUser = userPool.getCurrentUser();
+        if (currentUser) {
+            currentUser.getSession((err, session) => {
+                if (err) {
+                    console.log('No valid session');
+                    return;
+                }
+                if (session.isValid()) {
+                    window.location.href = '/journal';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
